@@ -27,13 +27,18 @@ dummy(Dx,Dy,Dr)->
 
 handle_call({movePlayer,BigDx,BigDy,Dr}, _From, Tab) ->
   {X,Y,R,ID,Name,Panel} = Tab,
-  Dx = round(BigDx/50/(R/100)),
-  Dy = round(BigDy/50/(R/100)),
-  CantMove = (X+Dx > ?game_x orelse X+Dx < 0 orelse Y+Dy > ?game_y orelse Y+Dy < 0),
-  case CantMove of
-    true->
-      {reply, playerMoved, {X,Y,R,ID,Name,Panel}};
-    _->
+  TempDx = round(BigDx/50/(R/100)),
+  TempDy = round(BigDy/50/(R/100)),
+  CantMoveX = (X+TempDx > ?game_x orelse X+TempDx < 0),
+  CantMoveY = Y+TempDy > ?game_y orelse Y+TempDy < 0,
+  case CantMoveX of
+    true-> Dx =0;
+    _-> Dx = TempDx
+  end,
+  case CantMoveY of
+    true->Dy=0;
+    _-> Dy = TempDy
+  end,
       FoodsEaten = gen_server:call(food_server,{playerMoved,X+Dx,Y+Dy,R+Dr}),
       PlayersEaten = getPlayersEaten(X+Dx,Y+Dy,R+Dr),
       PlayersEatenBy = getPlayersEatenBy(X+Dx,Y+Dy,R+Dr),
@@ -54,11 +59,10 @@ handle_call({movePlayer,BigDx,BigDy,Dr}, _From, Tab) ->
         [{P,_,_,_}]->%eaten
           {reply, {eatenBy,P}, {X+Dx,Y+Dy,R,ID,Name,Panel}}
       end
-  end
 ;
 
 handle_call({playerMoved,PlayerX,PlayerY,PlayerRadius}, _From, Tab) ->
-  {X,Y,R,ID,Name,Panel} = Tab,
+  {X,Y,R,_ID,_Name,_Panel} = Tab,
   Distance = math:sqrt(math:pow(PlayerX-X,2)+math:pow(PlayerY-Y,2)),
   Reply = Distance=<abs(PlayerRadius-R),%true if dot has been eaten, false if dot hasn't been eaten
   case Reply of

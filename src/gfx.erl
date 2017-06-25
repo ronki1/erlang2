@@ -32,7 +32,7 @@ stop()  -> gen_server:call(?MODULE, stop).
 
 init([]) ->
   Wx = wx:new(),
-  Frame = wxFrame:new(Wx, -1, "Concurent and Distributed LAB", [{size, {?game_x+?score_x, ?game_y}}]),
+  Frame = wxFrame:new(Wx, -1, "Erl.io - Yonatan Pearlmutter & Ron Kotlarsky", [{size, {?game_x+?score_x, ?game_y}}]),
   wxFrame:show(Frame),
   Panel = wxPanel:new(Frame,0,0,?game_x,?game_y),
   ScorePanel = wxPanel:new(Frame,?game_x,0,?score_x,?score_y),
@@ -43,6 +43,13 @@ init([]) ->
 dummy(X,Y,R)->
   gen_server:call(?MODULE,{playerMoved,1,X,Y,R})
 .
+
+handle_call(reDraw, _From, Tab) ->
+  {Frame,MainPanel,ScorePanel} = Tab,
+  paint_foods(mnes:getFoods(),MainPanel),
+  paint_players(mnes:getPlayers(),MainPanel),
+  NewScorePanel=draw_scores(Frame,ScorePanel),
+  {reply, MainPanel, {Frame,MainPanel,NewScorePanel}};
 
 handle_call({addShape,X,Y,R}, _From, Tab) ->
   {Frame,MainPanel,ScorePanel} = Tab,
@@ -112,20 +119,20 @@ draw_scores(Frame,Panel) ->
   NewPanel
 .
 
-make_score([]) -> [];
+make_score([]) -> " ";
 make_score([{_,_,_,_,R,_,Name,_}|T]) -> Name ++ ":   " ++ integer_to_list(R) ++ "\n" ++ make_score(T).
 
 
 paint_foods([],Panel)->
   Panel;
 paint_foods([H|T],Panel)->
-  {food,PID,X,Y,Radius,Panel} = H,
-  draw_circle(X,Y,Radius,Panel,?wxGREEN),
+  {food,PID,X,Y,Radius,_} = H,
+  draw_circle(X,Y,Radius,Panel,?wxBLUE),
   paint_foods(T,Panel).
 
 paint_players([],Panel)->
   Panel;
 paint_players([H|T],Panel)->
-  {player,PID,X,Y,R,ID,Name,Panel} = H,
+  {player,PID,X,Y,R,ID,Name,_Panel} = H,
   draw_circle(X,Y,R,Panel,?wxBLUE),
   paint_players(T,Panel).

@@ -12,7 +12,7 @@
 -include("foodDB.hrl").
 
 %% API
--export([init_db/0,print_db/0,insert_food/2,remove_food/1,getFoods/0,insert_player/1,getPlayer/1,getPlayers/0,getPlayerById/1,grow_player_db/1,move_player_db/1,getPlayersExcept/1,remove_player/1]).
+-export([init_db/0,print_db/0,insert_food/2,changePID/3,remove_food/1,getFoods/0,insert_player/1,getPlayer/1,getPlayers/0,getPlayerById/1,grow_player_db/1,move_player_db/1,getPlayersExcept/1,remove_player/1]).
 
 init_db() ->
   mnesia:delete_table(food),
@@ -78,6 +78,22 @@ move_player_db({PID,Dx,Dy,Panel}) ->
     mnesia:write(New)
       end,
   mnesia:transaction(F).
+
+changePID(Table,OldPID,NewPID)->
+  F = fun() ->
+    [E] = mnesia:read(Table,OldPID , write),
+    case Table of
+      player->New = E#player{pid=NewPID};
+      _->New = E#food{pid=NewPID}
+    end,
+    mnesia:write(New)
+      end,
+  mnesia:transaction(F),
+  case Table of
+    player->remove_player(OldPID);
+    _-> remove_food(OldPID)
+  end
+.
 
 grow_player_db({PID,Dr}) ->
   F = fun() ->

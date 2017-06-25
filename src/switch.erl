@@ -1,10 +1,10 @@
 -module(switch).
 
--export([start/0]).
+-export([start/0,stop/0]).
 
 
 start() ->
-  spawn(fun start1/0).
+  register(switch,spawn(fun start1/0)).
 
 start1() ->
   {ok,Socket} = gen_udp:open(7777,[binary, {active,true}]),
@@ -29,5 +29,8 @@ loop_udp(Socket) ->
         ok -> gen_udp:send(Socket,IP,Port,<<1:8>>);
         _ -> gen_udp:send(Socket,IP,Port,<<0:8>>)
       end,
-      loop_udp(Socket)
+      loop_udp(Socket);
+    stop-> io:fwrite("SwitchStopped \n",[]),stopped
   end.
+
+stop()-> switch!stop.
