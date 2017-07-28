@@ -17,21 +17,24 @@
 -compile(export_all).
 -define(SERVER, ?MODULE).
 
--define(game_x,(1024)).
--define(game_y,(768)).
+-define(game_x,(1024)).%window width
+-define(game_y,(768)).%window height
+-define(initialSize,(10)).%initial radius of player
+-define(foodCount,(25)).%number of food elements on screen
 
 -import(mnes,[init_db/0,print_db/0,insert_food/2,remove_food/1,getFoods/0,insert_player/1,getPlayerById/1]).
 
 start(Args) -> gen_server:start_link({local, ?SERVER}, ?MODULE, Args, []).
 stop()  -> gen_server:call(?MODULE, stop).
 
+%initialization of main server, upon first startup
 init(main) ->
-  init_db(),
-  switch:start(),
-  Graphics  = gfx:start(),
-  FoodServer = food_server:start(25),
+  init_db(),%init mnesia DB
+  switch:start(),%init receiver switch
+  Graphics  = gfx:start(),%start graphics server
+  FoodServer = food_server:start(?foodCount),%start food server which will create 25 food elements
   PlayerServer = player_server:start(),
-  monitor_server:start(),
+  monitor_server:start(),%start monitor server that monitors "crash" of main_server
   {ok,{FoodServer,PlayerServer}}
 ;
 
@@ -64,9 +67,9 @@ handle_call({register,PlayerID,Name}, _From, Tab) ->
   io:format("RegisterReceived: ~p ID: ~p  ~n",[Name,PlayerID]),
   X=random:uniform(?game_x),
   Y=random:uniform(?game_y),
-  Panel = gen_server:call(gfx,{addShape,X,Y,10}),
-  {ok,PID} = player:start({X,Y,10,PlayerID,Name,Panel}),
-  insert_player({PID,X,Y,10,PlayerID,Name,Panel}),
+  Panel = gen_server:call(gfx,{addShape,X,Y,?initialSize}),
+  {ok,PID} = player:start({X,Y,?initialSize,PlayerID,Name,Panel}),
+  insert_player({PID,X,Y,?initialSize,PlayerID,Name,Panel}),
   gen_server:call(gfx,playersChanged),
   {reply,ok, Tab};
 
@@ -82,12 +85,12 @@ handle_info(_Info, State) -> {noreply, State}.
 terminate(_Reason, _State) -> ok.
 code_change(_OldVsn, State, _Extra) -> {ok, State}.
 
-generateFoods(0)->
-  ok;
-generateFoods(Num)->
-  X=random:uniform(100),
-  Y=random:uniform(100),
-  {ok,PID} = food:start({X,Y,2}),
-  insert_food(PID,{X,Y,2}),
-  generateFoods(Num-1)
-.
+%%generateFoods(0)->
+%%  ok;
+%%generateFoods(Num)->
+%%  X=random:uniform(100),
+%%  Y=random:uniform(100),
+%%  {ok,PID} = food:start({X,Y,2}),
+%%  insert_food(PID,{X,Y,2}),
+%%  generateFoods(Num-1)
+%%.
